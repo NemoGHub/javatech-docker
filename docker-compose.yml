@@ -5,9 +5,19 @@ volumes:
     driver: local
 
 services:
-
-  # TODO сервис nginx на локальном порту 22000, смапить nginx-data/upstreams.conf в /etc/nginx/conf.d/upstreams.conf
-
+  nginx:
+    container_name: nginx.service
+    build:
+      context: nginx
+    ports:
+      - 22000:80
+    volumes:
+      #монтируем файл в директорию контейнера
+      - ./nginx-data/upstreams.conf:/etc/nginx/conf.d/upstreams.conf:ro
+    depends_on:
+      - frontend
+      - backend1
+      - backend2
   postgres:
     container_name: postgres.service
     image: "postgres:13.0"
@@ -18,14 +28,13 @@ services:
     ports:
       - 22001:5432
     volumes:
-      - postgres-data-volume:/var/lib/postgresql/data
+      - postgres-data-volume:/var/lib/postgresql/data #именованный том
       - ./postgres/data.sql:/docker-entrypoint-initdb.d/data.sql
 
   frontend:
     container_name: frontend.service
     build:
       context: frontend
-#      dockerfile: Dockerfile-static
     ports:
       - 22002:3000
     volumes:
@@ -40,4 +49,13 @@ services:
     volumes:
       - ./backend1-data/application.properties:/app/application.properties
 
-  # TODO сервис backend2 на локальном порту 22004, внешний конфиг взять из backend2-data
+  backend2:
+    container_name: backend2.service
+    build:
+      context: backend
+    ports:
+      - 22004:7000
+    volumes:
+      - ./backend2-data/application.properties:/app/application.properties:ro
+    depends_on:
+      - postgres
